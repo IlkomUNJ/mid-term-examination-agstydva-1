@@ -30,6 +30,8 @@ public:
     void paintLines();
     void segmentDetection();
 
+    bool compareMatrix(const CustomMatrix& window, const CustomMatrix& pattern);
+
 protected:
     // Overridden method to handle painting on the widget
     void paintEvent(QPaintEvent *event) override;
@@ -40,6 +42,8 @@ protected:
 private:
     // A vector to store all the points drawn by the user
     QVector<QPoint> m_points;
+
+    QVector<QPoint> m_detectedSegments;
 
     bool isPaintLinesClicked = false;
 };

@@ -2,6 +2,7 @@
 #define CUSTOMMATRIX_H
 
 #include <iostream>
+#include <iomanip>
 
 using namespace std;
 
@@ -31,6 +32,28 @@ public:
                 mat[i][j] = m[i][j];
             }
         }
+    }
+
+    bool isNonEmpty() const {
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                if (mat[i][j]) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    void printMatrix(int x, int y) const {
+        cout << "--- Window at (" << x << ", " << y << ") ---" << endl;
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                cout << (mat[i][j] ? '1' : '0') << " ";
+            }
+            cout << endl;
+        }
+        cout << "-----------------------------------" << endl;
     }
 };
 

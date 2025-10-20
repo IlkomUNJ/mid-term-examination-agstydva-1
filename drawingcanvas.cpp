@@ -1,6 +1,7 @@
 #include "drawingcanvas.h"
+#include <QColor>
 
-DrawingCanvas::DrawingCanvas(QWidget *parent)  {
+DrawingCanvas::DrawingCanvas(QWidget *parent) {
     // Set a minimum size for the canvas
     setMinimumSize(this->WINDOW_WIDTH, this->WINDOW_HEIGHT);
     // Set a solid background color
@@ -9,6 +10,7 @@ DrawingCanvas::DrawingCanvas(QWidget *parent)  {
 
 void DrawingCanvas::clearPoints(){
     m_points.clear();
+    m_detectedSegments.clear();
     // Trigger a repaint to clear the canvas
     update();
 }
@@ -16,13 +18,27 @@ void DrawingCanvas::clearPoints(){
 void DrawingCanvas::paintLines(){
     /* Todo
      * Implement lines drawing per even pair
-    */
+     */
 
     isPaintLinesClicked = true;
     update();
 }
 
+bool DrawingCanvas::compareMatrix(const CustomMatrix& window, const CustomMatrix& pattern) {
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            if (pattern.mat[i][j] && !window.mat[i][j]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+
 void DrawingCanvas::segmentDetection(){
+    m_detectedSegments.clear();
+
     QPixmap pixmap = this->grab(); //
     QImage image = pixmap.toImage();
 
@@ -31,6 +47,38 @@ void DrawingCanvas::segmentDetection(){
 
     //To not crash we set initial size of the matrix
     vector<CustomMatrix> windows(image.width()*image.height());
+    windows.clear();
+
+    cout << "\n--- START DUMPING NON EMPTY WINDOWS ---" << endl;
+
+    bool pattern_h[3][3] = {
+        {0, 0, 0},
+        {1, 1, 1},
+        {0, 0, 0}
+    };
+    CustomMatrix patternH(pattern_h);
+
+    bool pattern_v[3][3] = {
+        {0, 1, 0},
+        {0, 1, 0},
+        {0, 1, 0}
+    };
+    CustomMatrix patternV(pattern_v);
+
+    bool pattern_d1[3][3] = {
+        {1, 0, 0},
+        {0, 1, 0},
+        {0, 0, 1}
+    };
+    CustomMatrix patternD1(pattern_d1);
+
+    bool pattern_d2[3][3] = {
+        {0, 0, 1},
+        {0, 1, 0},
+        {1, 0, 0}
+    };
+    CustomMatrix patternD2(pattern_d2);
+
 
     // Get the pixel value as an ARGB integer (QRgb is a typedef for unsigned int)
     for(int i = 1; i < image.width()-1;i++){
@@ -46,9 +94,26 @@ void DrawingCanvas::segmentDetection(){
 
             CustomMatrix mat(local_window);
 
+            if (mat.isNonEmpty()) {
+                mat.printMatrix(i, j);
+            }
+
+            if (compareMatrix(mat, patternH) ||
+                compareMatrix(mat, patternV) ||
+                compareMatrix(mat, patternD1) ||
+                compareMatrix(mat, patternD2)) {
+
+                m_detectedSegments.append(QPoint(i, j));
+            }
+
             windows.push_back(mat);
         }
     }
+
+    cout << "--- END DUMPING ---" << endl;
+
+    update();
+
     return;
 }
 
@@ -86,6 +151,19 @@ void DrawingCanvas::paintEvent(QPaintEvent *event){
         pen.setColor(Qt::blue);
         painter.setPen(pen);
     }
+
+    if (!m_detectedSegments.isEmpty()) {
+        QColor purple(128, 0, 128);
+
+        pen.setColor(purple);
+        pen.setWidth(1);
+        painter.setPen(pen);
+        painter.setBrush(QBrush(purple));
+
+        for (const QPoint& center : std::as_const(m_detectedSegments)) {
+            painter.drawRect(center.x() - 1, center.y() - 1, 3, 3);
+        }
+    }
 }
 
 void DrawingCanvas::mousePressEvent(QMouseEvent *event) {
@@ -94,5 +172,3 @@ void DrawingCanvas::mousePressEvent(QMouseEvent *event) {
     // Trigger a repaint
     update();
 }
-
-
